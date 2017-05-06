@@ -10,14 +10,10 @@ import com.github.schwibbes.voter.data.Item;
 import com.github.schwibbes.voter.data.Poll;
 import com.github.schwibbes.voter.data.Voter;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.vaadin.annotations.Theme;
 import com.vaadin.data.Binder;
 import com.vaadin.data.HasValue.ValueChangeEvent;
 import com.vaadin.data.HasValue.ValueChangeListener;
-import com.vaadin.data.provider.DataProvider;
-import com.vaadin.data.provider.ListDataProvider;
-import com.vaadin.server.SerializableComparator;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Alignment;
@@ -53,9 +49,9 @@ public class VoterUI extends UI {
 		refreshData(new Poll("new"));
 	};
 
-	private ListDataProvider<Item> rankData;
-
 	private final List<PopupView> popups = Lists.newArrayList();
+
+	private ListSelect<Item> rank;
 
 	@Override
 	protected void init(VaadinRequest vaadinRequest) {
@@ -162,8 +158,7 @@ public class VoterUI extends UI {
 		final VerticalLayout rankField = new VerticalLayout();
 		content.addComponent(rankField);
 		content.setExpandRatio(rankField, 0.2f);
-		rankData = DataProvider.ofCollection(poll.getItems());
-		final ListSelect<Item> rank = new ListSelect<>("", rankData);
+		rank = new ListSelect<>();
 		rank.setItemCaptionGenerator(Item::getName);
 		rank.setWidth("100%");
 		rankField.addComponent(rank);
@@ -179,30 +174,17 @@ public class VoterUI extends UI {
 	public void refreshData(Poll p) {
 		try {
 			poll = p;
-			final PollViewModel vm = new PollViewModel();
-			vm.setRank(Sets.newLinkedHashSet(p.getInOrder()));
-			vm.setName(p.getName() + "-" + p.get1st());
-			log.warn("" + vm);
-			binder.readBean(vm);
-			refreshList();
+
+			// final PollViewModel vm = new PollViewModel();
+			// vm.setRank(Sets.newLinkedHashSet(p.getInOrder()));
+			// vm.setName(p.getName() + "-" + p.get1st());
+			// binder.readBean(vm);
+			rank.clear();
+			rank.setItems(poll.getInOrder());
 			popups.forEach(PopupView::markAsDirty);
 		} catch (final Exception e) {
 			log.error("problem during writeBean", e);
 		}
-	}
-
-	private void refreshList() {
-		rankData.setSortComparator(new SerializableComparator<Item>() {
-
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public int compare(Item o1, Item o2) {
-				return poll.getInOrder().indexOf(o2) - poll.getInOrder().indexOf(o1);
-			}
-
-		});
-		rankData.refreshAll();
 	}
 
 	private class PopupTextFieldContent implements PopupView.Content {
@@ -234,7 +216,7 @@ public class VoterUI extends UI {
 		@Override
 		public final String getMinimizedValueAsHTML() {
 			final int scoreForThisVoter = 1 + poll.queryVote(v, i);
-			log.info("{} -> {}", scoreForThisVoter, i);
+			log.trace("{} -> {}", scoreForThisVoter, i);
 			return scoreForThisVoter <= 0 || scoreForThisVoter >= 4 ? "-" : "" + scoreForThisVoter;
 		}
 	}
