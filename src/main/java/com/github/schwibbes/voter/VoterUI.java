@@ -19,6 +19,7 @@ import com.vaadin.annotations.Theme;
 import com.vaadin.data.Binder;
 import com.vaadin.data.HasValue.ValueChangeEvent;
 import com.vaadin.data.HasValue.ValueChangeListener;
+import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.FileDownloader;
 import com.vaadin.server.StreamResource;
 import com.vaadin.server.StreamResource.StreamSource;
@@ -117,7 +118,7 @@ public class VoterUI extends UI {
 
 		menu = new MenuBar();
 		header.addComponent(menu);
-		final MenuItem main = menu.addItem("-", null);
+		final MenuItem main = menu.addItem("", VaadinIcons.MENU, null);
 		main.addItem("Restart", e -> {
 			log.warn("restart poll with state -> {}", poll);
 			refreshData(new Poll("new"));
