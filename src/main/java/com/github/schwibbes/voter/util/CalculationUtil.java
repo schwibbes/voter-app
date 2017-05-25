@@ -1,113 +1,84 @@
 package com.github.schwibbes.voter.util;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.schwibbes.voter.data.Item;
-import com.google.common.base.Objects;
+import com.github.schwibbes.voter.data.ItemAndScore;
+import com.github.schwibbes.voter.data.Vote;
+import com.github.schwibbes.voter.data.Voter;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 
 public class CalculationUtil {
 
-	public static List<Item> mergeLists(Collection<List<Item>> in) {
+	private static final Logger log = LoggerFactory.getLogger(CalculationUtil.class);
 
-		final Set<ScoredItem> result = in.stream()
-				.flatMap(x -> x.stream())
-				.map(x -> new ScoredItem(x, 0))
-				.collect(toSet());
-
-		in.stream().map(list -> scoreByItem(list)).forEach(list -> {
-			list.stream().forEach(item -> {
-				find(item, result).ifPresent(x -> x.score += item.score);
-			});
-		});
-
-		return result.stream().sorted().map(si -> si.item).collect(toList());
-	}
-
-	private static <T> Optional<T> find(T object, Set<T> inList) {
-		for (final T obj : inList) {
-			if (Objects.equal(obj, object)) {
-				return Optional.of(obj);
-			}
+	public void assertSingleVotePerVoter(List<Vote> votes) {
+		final Multimap<Voter, Item> seen = HashMultimap.create();
+		for (final Vote vote : votes) {
+			final Item item = vote.getItemAndScore().getItem();
+			final boolean putOk = seen.put(vote.getVoter(), item);
+			Preconditions.checkState(putOk,
+					"voter %s votes twice for item %s in votes %s",
+					vote.getVoter(),
+					item,
+					votes);
 		}
-		return Optional.empty();
 
 	}
 
-	private static final class ScoredItem implements Comparable<ScoredItem> {
-		private final Item item;
-		private int score;
+	public List<ItemAndScore> mergeVotes(List<Vote> votes) {
+		final BiFunction<List<ItemAndScore>, Vote, List<ItemAndScore>> accumulator = (before, vote) -> {
 
-		public ScoredItem(Item item, int score) {
-			this.item = item;
-			this.score = score;
-		}
+			final boolean exists = before.stream().anyMatch(x -> vote.isSameItem(x.getItem()));
 
-		@Override
-		public int compareTo(ScoredItem o) {
-			return o.score - score;
-		}
-
-		@Override
-		public String toString() {
-			return "ScoredItem [item=" + item + ", score=" + score + "]";
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((item == null) ? 0 : item.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
+			if (exists) {
+				log.info("exists {}", vote.getItemAndScore().getItem());
+				return sumScoresForThisItem(before, vote);
+			} else {
+				log.info("new {}", vote.getItemAndScore().getItem());
+				return appendItemToList(before, vote);
 			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			final ScoredItem other = (ScoredItem) obj;
-			if (item == null) {
-				if (other.item != null) {
-					return false;
-				}
-			} else if (!item.equals(other.item)) {
-				return false;
-			}
-			return true;
-		}
-	}
+		};
 
-	private static List<ScoredItem> scoreByItem(List<Item> l) {
-		final List<ScoredItem> result = Lists.newArrayList();
-		for (int i = 0; i < l.size(); i++) {
-			result.add(new ScoredItem(l.get(i), mapScore(i)));
-		}
+		final BinaryOperator<List<ItemAndScore>> combiner = new BinaryOperator<List<ItemAndScore>>() {
+
+			@Override
+			public List<ItemAndScore> apply(List<ItemAndScore> t, List<ItemAndScore> u) {
+				throw new UnsupportedOperationException("combiner not implemented");
+			}
+		};
+		final List<ItemAndScore> result = votes.stream().reduce(Lists.newArrayList(), accumulator, combiner);
+		log.trace("merge votes: {} to result {}", votes, result);
 		return result;
 	}
 
-	private static int mapScore(int i) {
-		switch (i) {
-		case 0:
-			return 3;
-		case 1:
-			return 2;
-		case 2:
-			return 1;
-		default:
-			return 0;
-		}
+	private List<ItemAndScore> appendItemToList(List<ItemAndScore> before, Vote vote) {
+		final List<ItemAndScore> result = Lists.newArrayList(before);
+		result.add(vote.getItemAndScore());
+		return result;
 	}
+
+	private List<ItemAndScore> sumScoresForThisItem(List<ItemAndScore> before,
+			Vote vote) {
+		return before.stream()
+				.map(x -> {
+					if (vote.isSameItem(x.getItem())) {
+						return x.update(vote.getItemAndScore().getScore());
+					} else {
+						return x;
+					}
+				})
+				.collect(toList());
+	}
+
 }

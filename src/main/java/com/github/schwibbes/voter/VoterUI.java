@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import com.github.schwibbes.voter.data.Item;
 import com.github.schwibbes.voter.data.Poll;
+import com.github.schwibbes.voter.data.Vote;
 import com.github.schwibbes.voter.data.Voter;
 import com.github.schwibbes.voter.util.JsonUtil;
 import com.google.common.collect.Lists;
@@ -277,15 +279,13 @@ public class VoterUI extends UI {
 			this.v = v;
 			this.i = i;
 			layout = new HorizontalLayout();
-			layout.addComponent(new Button("1st", e -> {
-				refreshData(poll.vote(v, i, 1));
-			}));
-			layout.addComponent(new Button("2nd", e -> {
-				refreshData(poll.vote(v, i, 2));
-			}));
-			layout.addComponent(new Button("3rd", e -> {
-				refreshData(poll.vote(v, i, 3));
-			}));
+
+			poll.getScores().forEach(score -> {
+				layout.addComponent(new Button(score + "Punkte", e -> {
+					refreshData(poll.addVote(v, i, score));
+				}));
+			});
+
 		}
 
 		@Override
@@ -295,9 +295,8 @@ public class VoterUI extends UI {
 
 		@Override
 		public final String getMinimizedValueAsHTML() {
-			final int scoreForThisVoter = 1 + poll.queryVote(v, i);
-			log.trace("{} -> {}", scoreForThisVoter, i);
-			return scoreForThisVoter <= 0 || scoreForThisVoter >= 4 ? "-" : "" + scoreForThisVoter;
+			final Optional<Vote> vote = poll.getVoteByVoterAndItem(v, i);
+			return vote.isPresent() ? ("" + vote.get().getItemAndScore().getScore()) : "-";
 		}
 	}
 }

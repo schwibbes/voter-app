@@ -3,108 +3,84 @@ package com.github.schwibbes.voter.data;
 import static java.util.stream.Collectors.toList;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.schwibbes.voter.util.CalculationUtil;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 public class Poll extends BaseEntity {
 
+	// prepare poll
 	private final List<Item> items;
 	private final List<Voter> voters;
-	private final Map<Voter, List<Item>> votes;
-	private final Map<UUID, List<UUID>> jsonVotes;
+	private final List<Integer> scores;
 
+	// state
+	private final List<Vote> votes;
+
+	// beans
+	private final CalculationUtil calcUtil = new CalculationUtil();
+
+	/**
+	 * Default Values
+	 */
 	public Poll(String name) {
-		this(name, Lists.newArrayList(), Lists.newArrayList(), Maps.newHashMap());
+		this(name, Lists.newArrayList(), Lists.newArrayList(), Lists.newArrayList(1, 2, 3), Lists.newArrayList());
 	}
 
-	public Poll(String name,
+	public Poll(
+			String name,
 			List<Item> items,
 			List<Voter> voters,
-			Map<Voter, List<Item>> votes) {
-		setId(UUID.randomUUID());
-		setName(name);
+			List<Integer> scores,
+			List<Vote> votes) {
+		this.id = UUID.randomUUID();
+		this.name = name;
 		this.items = Lists.newArrayList(items);
 		this.voters = Lists.newArrayList(voters);
-		this.votes = cloneVotes(votes);
-		this.jsonVotes = Maps.newHashMap();
-		votes.forEach((k, v) -> {
-			jsonVotes.put(k.getId(), v.stream().map(Item::getId).collect(toList()));
-		});
-	}
-
-	@JsonCreator()
-	public static Poll createFromJson(
-			@JsonProperty("id") String id,
-			@JsonProperty("name") String name,
-			@JsonProperty("items") List<Item> items,
-			@JsonProperty("voters") List<Voter> voters,
-			@JsonProperty("votes") Map<UUID, List<UUID>> jsonVotes) {
-
-		final Poll result = new Poll(name, Lists.newArrayList(items), Lists.newArrayList(voters),
-				fromData(items, voters, jsonVotes));
-		result.setId(UUID.randomUUID());
-		return result;
-	}
-
-	private static Map<Voter, List<Item>> fromData(List<Item> items,
-			List<Voter> voters,
-			Map<UUID, List<UUID>> jsonVotes2) {
-		final Map<Voter, List<Item>> result = Maps.newHashMap();
-		jsonVotes2.forEach((k, v) -> {
-			result.put(findInList(Voter.class, k, voters),
-					v.stream().map(i -> findInList(Item.class, i, items)).collect(toList()));
-		});
-		return result;
-	}
-
-	private static <T extends BaseEntity> T findInList(Class<T> clazz, UUID id, List<T> list) {
-		return list.stream()
-				.filter(x -> Objects.equal(id, x.getId()))
-				.map(clazz::cast)
-				.findFirst()
-				.orElseThrow(
-						() -> new IllegalArgumentException("not found with id: " + id));
-	}
-
-	private Map<Voter, List<Item>> cloneVotes(Map<Voter, List<Item>> votes) {
-		final Map<Voter, List<Item>> result = Maps.newHashMap();
-		votes.keySet().forEach(voter -> {
-			result.put(voter, Lists.newArrayList(votes.get(voter)));
-		});
-		voters.stream().forEach(voter -> result.putIfAbsent(voter, Lists.newArrayList()));
-		return result;
+		this.scores = Lists.newArrayList(scores);
+		this.votes = Lists.newArrayList(votes);
 	}
 
 	public Poll addVoter(Voter v) {
 		final List<Voter> updated = Lists.newArrayList(voters);
 		updated.add(v);
-		return new Poll(name, items, updated, votes);
+		return new Poll(name, items, updated, scores, votes);
 	}
 
 	public Poll addItem(Item i) {
 		final List<Item> updated = Lists.newArrayList(items);
 		updated.add(i);
-		return new Poll(name, updated, voters, votes);
+		return new Poll(name, updated, voters, scores, votes);
 	}
 
-	public Poll vote(Voter v, Item i, int rank) {
+	public Poll addVote(Voter v, Item i, int score) {
 
-		Preconditions.checkArgument(rank <= 3 && rank >= 1, "rank must be one of 1,2,3, but was: " + rank);
+		Preconditions.checkArgument(scores.contains(score),
+				"score {} not allowed, choose one of {}",
+				score,
+				scores);
 
-		final Map<Voter, List<Item>> updated = cloneVotes(votes);
-		final List<Item> favourites = updated.get(v);
-		favourites.add(Math.min(rank - 1, favourites.size()), i);
+		final List<Vote> updated = cleanupObsoleteVotes(v, i, score);
+		// allways add current vote
+		updated.add(new Vote(v, i, score));
 
-		return new Poll(name, items, voters, updated);
+		return new Poll(name, items, voters, scores, updated);
+	}
+
+	/**
+	 * One voters can not vote for the same item twice OR give the same score
+	 * twice
+	 */
+	private List<Vote> cleanupObsoleteVotes(Voter v, Item i, int score) {
+		return votes.stream()
+				.filter(vote -> !vote.isSameVoterAndScore(v, score))
+				.filter(vote -> !vote.isSameVoterAndItem(v, i))
+				.collect(toList());
 	}
 
 	public List<Item> getItems() {
@@ -117,7 +93,11 @@ public class Poll extends BaseEntity {
 
 	@JsonIgnore
 	public List<Item> getInOrder() {
-		return CalculationUtil.mergeLists(votes.values());
+		return calcUtil.mergeVotes(votes)
+				.stream()
+				.sorted()
+				.map(ItemAndScore::getItem)
+				.collect(toList());
 	}
 
 	@JsonIgnore
@@ -127,20 +107,33 @@ public class Poll extends BaseEntity {
 	}
 
 	@JsonIgnore
-	public Map<Voter, List<Item>> getVotes() {
+	public List<Vote> getVotesForItem(Item i) {
+		return votes.stream()
+				.filter(v -> Objects.equal(i, v.getItemAndScore().getItem()))
+				.collect(toList());
+	}
+
+	@JsonIgnore
+	public List<Vote> getVotesByVoter(Voter voter) {
+		return votes.stream()
+				.filter(v -> Objects.equal(voter, v.getVoter()))
+				.collect(toList());
+	}
+
+	@JsonIgnore
+	public Optional<Vote> getVoteByVoterAndItem(Voter voter, Item item) {
+		return votes.stream()
+				.filter(v -> Objects.equal(voter, v.getVoter()))
+				.filter(v -> Objects.equal(item, v.getItemAndScore().getItem()))
+				.findFirst();
+	}
+
+	public List<Vote> getVotes() {
 		return votes;
 	}
 
-	@JsonProperty("votes")
-	public Map<UUID, List<UUID>> getJsonVotes() {
-		return jsonVotes;
-	}
-
-	public int queryVote(Voter v, Item i) {
-		if (!votes.containsKey(v)) {
-			return -1;
-		}
-		return votes.get(v).indexOf(i);
+	public List<Integer> getScores() {
+		return scores;
 	}
 
 }
