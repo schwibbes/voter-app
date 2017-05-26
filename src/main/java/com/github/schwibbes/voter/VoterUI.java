@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.schwibbes.voter.data.Item;
+import com.github.schwibbes.voter.data.ItemAndScore;
 import com.github.schwibbes.voter.data.Poll;
 import com.github.schwibbes.voter.data.Vote;
 import com.github.schwibbes.voter.data.Voter;
@@ -62,7 +63,7 @@ public class VoterUI extends UI {
 
 	private final List<PopupView> popups = Lists.newArrayList();
 
-	private ListSelect<Item> rank;
+	private ListSelect<ItemAndScore> rank;
 
 	private StreamResource exportJson;
 
@@ -242,7 +243,7 @@ public class VoterUI extends UI {
 		content.addComponent(rankField);
 		content.setExpandRatio(rankField, 0.2f);
 		rank = new ListSelect<>();
-		rank.setItemCaptionGenerator(Item::getName);
+		rank.setItemCaptionGenerator(x -> String.format("%s (%d)", x.getItem().getName(), x.getScore()));
 		rank.setWidth("100%");
 		rankField.addComponent(rank);
 	}
