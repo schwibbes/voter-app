@@ -8,6 +8,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -191,4 +192,73 @@ public class CalculationUtilTest {
 						3 * (2)));
 	}
 
+	@Test
+	public void solve_tie_game_strategy() {
+
+		final Poll base = new Poll("")
+				.addVoter(voterA)
+				.addItem(itemA)
+				.addItem(itemB);
+
+		final Poll p1 = base
+				.addVote(voterA, itemA, 3)
+				.addVote(voterA, itemB, 1);
+		final Poll p2 = base
+				.addVote(voterA, itemA, 1)
+				.addVote(voterA, itemB, 3);
+
+		final List<ItemAndScore> result = underTest.mergePolls(
+				Arrays.asList(p1, p2),
+				Arrays.asList(1, 1));
+
+		assertThat(result, hasSize(2));
+		assertEquals(result.get(0).getScore(), result.get(1).getScore());
+
+		assertEquals(itemB, result.get(0).getItem());
+		assertEquals(itemA, result.get(1).getItem());
+
+		Item winner = underTest.resolveTie(itemA, itemB, Arrays.asList(p1.getInOrder(), p2.getInOrder()));
+		assertThat(winner, is(itemB));
+
+		winner = underTest.resolveTie(itemA, itemB, Arrays.asList(p2.getInOrder(), p1.getInOrder()));
+		assertThat(winner, is(itemA));
+
+	}
+
+	@Test
+	public void solve_tie_game_strategy_2() {
+
+		final Poll base = new Poll("")
+				.addVoter(voterA)
+				.addItem(itemA)
+				.addItem(itemB);
+
+		final Poll p1 = base
+				.addVote(voterA, itemA, 3)
+				.addVote(voterA, itemB, 1);
+		final Poll p2 = base
+				.addVote(voterA, itemA, 1)
+				.addVote(voterA, itemB, 3);
+
+		final List<ItemAndScore> result = underTest.mergePolls(
+				Arrays.asList(p1, p2),
+				Arrays.asList(1, 1));
+
+		assertThat(result, hasSize(2));
+		assertEquals(result.get(0).getScore(), result.get(1).getScore());
+
+		assertEquals(itemB, result.get(0).getItem());
+		assertEquals(itemA, result.get(1).getItem());
+
+		Collections.sort(result,
+				new CalculationUtil.ConflictResolvingItemComparator(Arrays.asList(p1.getInOrder(), p2.getInOrder())));
+		assertThat(result.get(0).getItem(), is(itemB));
+		assertThat(result.get(1).getItem(), is(itemA));
+
+		Collections.sort(result,
+				new CalculationUtil.ConflictResolvingItemComparator(Arrays.asList(p2.getInOrder(), p1.getInOrder())));
+		assertThat(result.get(0).getItem(), is(itemA));
+		assertThat(result.get(1).getItem(), is(itemB));
+
+	}
 }

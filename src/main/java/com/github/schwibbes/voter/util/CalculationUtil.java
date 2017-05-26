@@ -5,8 +5,10 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,6 +157,71 @@ public class CalculationUtil {
 					}
 				})
 				.collect(toList());
+	}
+
+	public Item resolveTie(Item itemA, Item itemB, List<List<ItemAndScore>> allItemRankLists) {
+
+		Item result = null;
+		for (final List<ItemAndScore> list : allItemRankLists) {
+
+			final Optional<ItemAndScore> aScore = list.stream()
+					.filter(x -> Objects.equal(x.getItem(), itemA))
+					.findFirst();
+			final Optional<ItemAndScore> bScore = list.stream()
+					.filter(x -> Objects.equal(x.getItem(), itemB))
+					.findFirst();
+
+			if (aScore.isPresent() && bScore.isPresent()) {
+				final int _a = aScore.get().getScore();
+				final int _b = bScore.get().getScore();
+
+				if (_a == _b) {
+					log.warn("items no not differ in this list: {} <-> {}", itemA, itemB);
+				} else if (_a > _b) {
+					result = aScore.get().getItem();
+				} else if (_a < _b) {
+					result = bScore.get().getItem();
+				}
+			} else if (!aScore.isPresent() && !bScore.isPresent()) {
+				log.warn("nothing to compare", itemA, itemB);
+			} else if (aScore.isPresent()) {
+				result = aScore.get().getItem();
+			} else if (bScore.isPresent()) {
+				result = bScore.get().getItem();
+			}
+		}
+
+		return result;
+	}
+
+	public static final class ConflictResolvingItemComparator implements Comparator<ItemAndScore> {
+
+		private final List<List<ItemAndScore>> rankLists;
+		private final CalculationUtil calculationUtil;
+
+		public ConflictResolvingItemComparator(List<List<ItemAndScore>> rankLists) {
+			this.rankLists = rankLists;
+			calculationUtil = new CalculationUtil();
+		}
+
+		@Override
+		public int compare(ItemAndScore o1, ItemAndScore o2) {
+
+			final int scoreDiff = o1.getScore() - o2.getScore();
+
+			if (scoreDiff != 0) {
+				return scoreDiff;
+			}
+
+			final Item winner = calculationUtil.resolveTie(o1.getItem(), o2.getItem(), rankLists);
+			if (Objects.equal(winner, o1.getItem())) {
+				return -1;
+			} else if (Objects.equal(winner, o2.getItem())) {
+				return +1;
+			} else {
+				return 0;
+			}
+		}
 	}
 
 }
