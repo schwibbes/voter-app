@@ -21,6 +21,10 @@ public class ItemAndScore implements Comparable<ItemAndScore> {
 		return new ItemAndScore(item, this.score + score);
 	}
 
+	public ItemAndScore updateByFactor(int factor) {
+		return new ItemAndScore(item, this.score * factor);
+	}
+
 	@Override
 	public String toString() {
 		return "ItemAndScore [item=" + item + ", score=" + score + "]";

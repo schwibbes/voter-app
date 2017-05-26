@@ -1,4 +1,4 @@
-package voter;
+package com.github.schwibbes.voter.data;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;

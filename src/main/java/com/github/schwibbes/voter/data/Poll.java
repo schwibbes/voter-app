@@ -60,6 +60,8 @@ public class Poll extends BaseEntity {
 
 	public Poll addVote(Voter v, Item i, int score) {
 
+		Preconditions.checkArgument(voters.contains(v));
+		Preconditions.checkArgument(items.contains(i));
 		Preconditions.checkArgument(scores.contains(score),
 				"score {} not allowed, choose one of {}",
 				score,
@@ -92,18 +94,12 @@ public class Poll extends BaseEntity {
 	}
 
 	@JsonIgnore
-	public List<Item> getInOrder() {
+	public List<ItemAndScore> getInOrder() {
 		return calcUtil.mergeVotes(votes)
 				.stream()
 				.sorted()
-				.map(ItemAndScore::getItem)
+				// .map(ItemAndScore::getItem)
 				.collect(toList());
-	}
-
-	@JsonIgnore
-	public String get1st() {
-		final List<Item> inOrder = getInOrder();
-		return inOrder.isEmpty() ? "" : inOrder.iterator().next().getName();
 	}
 
 	@JsonIgnore
