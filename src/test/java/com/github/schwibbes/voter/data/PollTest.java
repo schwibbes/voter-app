@@ -7,16 +7,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.assertj.core.util.Lists;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
-
-import com.github.schwibbes.voter.data.Item;
-import com.github.schwibbes.voter.data.Poll;
-import com.github.schwibbes.voter.data.Vote;
-import com.github.schwibbes.voter.data.Voter;
 
 @RunWith(MockitoJUnitRunner.class)
 public class PollTest {
@@ -35,7 +31,7 @@ public class PollTest {
 
 	@Test
 	public void testAddItem() {
-		final Poll in = new Poll("", items, voters, scores, votes);
+		final Poll in = new Poll(UUID.randomUUID(), "", items, voters, scores, votes);
 		final Poll out = in.addItem(new Item("A"));
 		assertThat(out.getItems(), hasSize(1));
 		assertThat(out.getVoters(), hasSize(0));
@@ -44,7 +40,7 @@ public class PollTest {
 
 	@Test
 	public void testAddVoter() {
-		final Poll in = new Poll("", items, voters, scores, votes);
+		final Poll in = new Poll(UUID.randomUUID(), "", items, voters, scores, votes);
 		final Poll out = in.addVoter(V_1);
 		assertThat(out.getItems(), hasSize(0));
 		assertThat(out.getVoters(), hasSize(1));
@@ -55,7 +51,7 @@ public class PollTest {
 	public void first_vote_should_always_count() {
 		items.add(I_1);
 		voters.add(V_1);
-		final Poll in = new Poll("", items, voters, scores, votes);
+		final Poll in = new Poll(UUID.randomUUID(), "", items, voters, scores, votes);
 		final Poll out = in.addVote(V_1, I_1, 1);
 		assertThat(out.getItems(), hasSize(1));
 		assertThat(out.getVoters(), hasSize(1));
@@ -73,7 +69,7 @@ public class PollTest {
 		final List<Item> items = Lists.newArrayList(I_1, I_2);
 		final List<Voter> voters = Lists.newArrayList(V_1);
 		final List<Vote> votes = Lists.newArrayList(new Vote(V_1, I_1, 3));
-		final Poll in = new Poll("", items, voters, scores, votes);
+		final Poll in = new Poll(UUID.randomUUID(), "", items, voters, scores, votes);
 
 		final Poll out = in.addVote(V_1, I_2, 2);
 		assertThat(out.getItems(), hasSize(2));
@@ -92,7 +88,7 @@ public class PollTest {
 		final List<Item> items = Lists.newArrayList(I_1);
 		final List<Voter> voters = Lists.newArrayList(V_1);
 		final List<Vote> votes = Lists.newArrayList(new Vote(V_1, I_1, 3));
-		final Poll in = new Poll("", items, voters, scores, votes);
+		final Poll in = new Poll(UUID.randomUUID(), "", items, voters, scores, votes);
 
 		final Poll out = in.addVote(V_1, I_1, 2);
 		assertThat(out.getItems(), hasSize(1));
@@ -111,7 +107,7 @@ public class PollTest {
 		final List<Item> items = Lists.newArrayList(I_1, I_2);
 		final List<Voter> voters = Lists.newArrayList(V_1);
 		final List<Vote> votes = Lists.newArrayList(new Vote(V_1, I_1, 3));
-		final Poll in = new Poll("", items, voters, scores, votes);
+		final Poll in = new Poll(UUID.randomUUID(), "", items, voters, scores, votes);
 
 		final Poll out = in.addVote(V_1, I_2, 3);
 		assertThat(out.getItems(), hasSize(2));

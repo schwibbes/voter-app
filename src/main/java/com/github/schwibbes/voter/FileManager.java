@@ -5,11 +5,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.github.schwibbes.voter.data.Poll;
+import com.github.schwibbes.voter.util.JsonUtil;
 import com.vaadin.server.FileDownloader;
 import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.server.StreamResource;
@@ -24,7 +26,7 @@ public class FileManager {
 
 	private static final Logger log = LoggerFactory.getLogger(FileManager.class);
 
-	public void menuImport(UI ui, UploadHandler listener) {
+	public void menuImport(UI ui, UpdateHandler listener) {
 		final Window window = new Window("Import");
 		window.center();
 		window.setResizable(false);
@@ -43,7 +45,7 @@ public class FileManager {
 		});
 		upload.addSucceededListener(event -> {
 			try {
-				listener.accept(jsonUpload.toString());
+				listener.updatePolls(JsonUtil.load(jsonUpload.toString()));
 			} finally {
 				if (jsonUpload != null) {
 					try {
@@ -59,7 +61,7 @@ public class FileManager {
 		ui.addWindow(window);
 	}
 
-	public void menuExport(UI ui, Poll poll) {
+	public void menuExport(UI ui, List<Poll> polls) {
 		final Window window = new Window("Export");
 		window.setWidth(300.0f, Unit.PIXELS);
 		window.center();
@@ -71,25 +73,21 @@ public class FileManager {
 		final Button downloadButton = new Button("Download");
 		content.addComponent(downloadButton);
 
-		final FileDownloader fileDownloader = new FileDownloader(prepareResource(poll));
+		final FileDownloader fileDownloader = new FileDownloader(prepareResource(polls));
 		fileDownloader.extend(downloadButton);
 
 		ui.addWindow(window);
 	}
 
-	private StreamResource prepareResource(Poll poll) {
+	private StreamResource prepareResource(List<Poll> polls) {
 		return new StreamResource(new StreamSource() {
 			private static final long serialVersionUID = 1L;
 
 			@Override
 			public InputStream getStream() {
-				return new ByteArrayInputStream(poll.toString().getBytes());
+				return new ByteArrayInputStream(polls.toString().getBytes());
 			}
 
 		}, "poll.json");
-	}
-
-	public static interface UploadHandler {
-		void accept(String json);
 	}
 }

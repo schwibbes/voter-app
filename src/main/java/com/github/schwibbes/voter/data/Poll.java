@@ -34,17 +34,23 @@ public class Poll extends BaseEntity {
 	 * Default Values
 	 */
 	public Poll(String name) {
-		this(name, Lists.newArrayList(), Lists.newArrayList(), Lists.newArrayList(1, 2, 3), Lists.newArrayList());
+		this(UUID.randomUUID(),
+				name,
+				Lists.newArrayList(),
+				Lists.newArrayList(),
+				Lists.newArrayList(1, 2, 3),
+				Lists.newArrayList());
 	}
 
 	// TODO: JsonImport does not work
 	public Poll(
+			UUID id,
 			String name,
 			List<Item> items,
 			List<Voter> voters,
 			List<Integer> scores,
 			List<Vote> votes) {
-		this.id = UUID.randomUUID();
+		this.id = id;
 		this.name = name;
 		this.items = Lists.newArrayList(items);
 		this.voters = Lists.newArrayList(voters);
@@ -55,13 +61,13 @@ public class Poll extends BaseEntity {
 	public Poll addVoter(Voter v) {
 		final List<Voter> updated = Lists.newArrayList(voters);
 		updated.add(v);
-		return new Poll(name, items, updated, scores, votes);
+		return new Poll(id, name, items, updated, scores, votes);
 	}
 
 	public Poll addItem(Item i) {
 		final List<Item> updated = Lists.newArrayList(items);
 		updated.add(i);
-		return new Poll(name, updated, voters, scores, votes);
+		return new Poll(id, name, updated, voters, scores, votes);
 	}
 
 	public Poll addVote(Voter v, Item i, int score) {
@@ -77,7 +83,7 @@ public class Poll extends BaseEntity {
 		// allways add current vote
 		updated.add(new Vote(v, i, score));
 
-		return new Poll(name, items, voters, scores, updated);
+		return new Poll(id, name, items, voters, scores, updated);
 	}
 
 	/**

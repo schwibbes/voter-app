@@ -1,62 +1,45 @@
 package com.github.schwibbes.voter;
 
-import java.util.Set;
+import java.util.List;
 
-import com.github.schwibbes.voter.data.Item;
-import com.github.schwibbes.voter.util.JsonUtil;
+import com.github.schwibbes.voter.data.ItemAndScore;
+import com.github.schwibbes.voter.data.Poll;
+import com.vaadin.ui.ListSelect;
+import com.vaadin.ui.PopupView;
 
 public class PollViewModel {
 
-	private String name;
-	private Set<Item> rank;
+	private final Poll poll;
+	private ListSelect<ItemAndScore> rank;
+	private List<PopupView> popups;
 
-	private String first;
-	private String second;
-	private String third;
-
-	public String getName() {
-		return name;
+	public PollViewModel(Poll poll) {
+		this.poll = poll;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void updateDisplay() {
+		rank.clear();
+		rank.setItems(poll.getInOrder());
+		popups.forEach(PopupView::markAsDirty);
 	}
 
-	public Set<Item> getRank() {
+	public Poll getPoll() {
+		return poll;
+	}
+
+	public ListSelect<ItemAndScore> getRank() {
 		return rank;
 	}
 
-	public void setRank(Set<Item> rank) {
+	public void setRank(ListSelect<ItemAndScore> rank) {
 		this.rank = rank;
 	}
 
-	public String getFirst() {
-		return first;
+	public List<PopupView> getPopups() {
+		return popups;
 	}
 
-	public void setFirst(String first) {
-		this.first = first;
+	public void setPopups(List<PopupView> popups) {
+		this.popups = popups;
 	}
-
-	public String getSecond() {
-		return second;
-	}
-
-	public void setSecond(String second) {
-		this.second = second;
-	}
-
-	public String getThird() {
-		return third;
-	}
-
-	public void setThird(String third) {
-		this.third = third;
-	}
-
-	@Override
-	public String toString() {
-		return JsonUtil.stringify(this);
-	}
-
 }
