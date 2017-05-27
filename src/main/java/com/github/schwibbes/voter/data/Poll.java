@@ -32,6 +32,7 @@ public class Poll extends BaseEntity {
 		this(name, Lists.newArrayList(), Lists.newArrayList(), Lists.newArrayList(1, 2, 3), Lists.newArrayList());
 	}
 
+	// TODO: JsonImport does not work
 	public Poll(
 			String name,
 			List<Item> items,

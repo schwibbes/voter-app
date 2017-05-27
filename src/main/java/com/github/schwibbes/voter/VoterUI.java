@@ -1,16 +1,14 @@
 package com.github.schwibbes.voter;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.schwibbes.voter.FileManager.UploadHandler;
 import com.github.schwibbes.voter.data.Item;
 import com.github.schwibbes.voter.data.ItemAndScore;
 import com.github.schwibbes.voter.data.Poll;
@@ -19,13 +17,7 @@ import com.github.schwibbes.voter.data.Voter;
 import com.github.schwibbes.voter.util.JsonUtil;
 import com.google.common.collect.Lists;
 import com.vaadin.annotations.Theme;
-import com.vaadin.data.Binder;
-import com.vaadin.data.HasValue.ValueChangeEvent;
-import com.vaadin.data.HasValue.ValueChangeListener;
 import com.vaadin.icons.VaadinIcons;
-import com.vaadin.server.FileDownloader;
-import com.vaadin.server.StreamResource;
-import com.vaadin.server.StreamResource.StreamSource;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Alignment;
@@ -40,50 +32,30 @@ import com.vaadin.ui.MenuBar;
 import com.vaadin.ui.MenuBar.MenuItem;
 import com.vaadin.ui.PopupView;
 import com.vaadin.ui.UI;
-import com.vaadin.ui.Upload;
-import com.vaadin.ui.Upload.SucceededEvent;
-import com.vaadin.ui.Upload.SucceededListener;
 import com.vaadin.ui.VerticalLayout;
-import com.vaadin.ui.Window;
 
 @SpringUI
 @Theme("mytheme")
-public class VoterUI extends UI {
+public class VoterUI extends UI implements UploadHandler {
 	private static final long serialVersionUID = 1;
 
 	private static final Logger log = LoggerFactory.getLogger(VoterUI.class);
 
 	private Poll poll;
-
-	ByteArrayOutputStream jsonUpload = new ByteArrayOutputStream(10 * (2 ^ 10));
-
-	private MenuBar menu;
-
-	private Binder<PollViewModel> binder;
-
 	private final List<PopupView> popups = Lists.newArrayList();
-
 	private ListSelect<ItemAndScore> rank;
-
-	private StreamResource exportJson;
+	private FileManager fileManager;
 
 	@Override
 	protected void init(VaadinRequest vaadinRequest) {
 
-		poll = new Poll("new Poll");
+		poll = loadConfiguration();
+		createLayout();
+		refreshData(poll);
+		fileManager = new FileManager();
+	}
 
-		binder = new Binder<>(PollViewModel.class);
-		binder.addValueChangeListener(new ValueChangeListener<Poll>() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void valueChange(ValueChangeEvent<Poll> event) {
-				System.out.println(event);
-			}
-		});
-
-		poll = loadConfiguration(poll);
-
+	private void createLayout() {
 		final VerticalLayout v = new VerticalLayout();
 		v.setWidth("100%");
 		v.setHeight("100%");
@@ -92,15 +64,14 @@ public class VoterUI extends UI {
 		createHeader(v);
 		createContent(v);
 		createFooter(v);
-
-		refreshData(poll);
 	}
 
-	private Poll loadConfiguration(Poll p) {
-		final Poll[] result = new Poll[] { p };
-		IntStream.range(1, 6).forEach(i -> result[0] = result[0].addItem(new Item("team-" + i)));
-		IntStream.range(1, 4).forEach(i -> result[0] = result[0].addVoter(new Voter("voter-" + i)));
-		return result[0];
+	private Poll loadConfiguration() {
+		// TODO load from config
+		final AtomicReference<Poll> result = new AtomicReference<>(new Poll("my-vote"));
+		IntStream.range(1, 6).forEach(i -> result.set(result.get().addItem(new Item("team-" + i))));
+		IntStream.range(1, 4).forEach(i -> result.set(result.get().addVoter(new Voter("voter-" + i))));
+		return result.get();
 	}
 
 	private void createHeader(VerticalLayout body) {
@@ -111,6 +82,7 @@ public class VoterUI extends UI {
 		header.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
 
 		header.addComponent(new Image("Logo"));
+		// TODO: load logo
 		final Label pageTitle = new Label("Voter<app>");
 		header.addComponent(pageTitle);
 		header.setComponentAlignment(pageTitle, Alignment.MIDDLE_LEFT);
@@ -119,80 +91,13 @@ public class VoterUI extends UI {
 
 	private void createMenu(final HorizontalLayout header) {
 
-		menu = new MenuBar();
+		final MenuBar menu = new MenuBar();
 		header.addComponent(menu);
 		final MenuItem main = menu.addItem("", VaadinIcons.MENU, null);
-		main.addItem("Restart", e -> {
-			log.warn("restart poll with state -> {}", poll);
-			refreshData(new Poll("new"));
-		});
-		main.addItem("Export", e -> {
-			menuExport();
+		main.addItem("Restart", e -> refreshData(new Poll("new")));
 
-		});
-		main.addItem("Import", e -> {
-			menuImport();
-		});
-	}
-
-	private void menuImport() {
-		final Window window = new Window("Import");
-		window.center();
-		window.setResizable(false);
-		window.setModal(true);
-		window.setWidth(300.0f, Unit.PIXELS);
-		final VerticalLayout content = new VerticalLayout();
-		final Upload upload = new Upload("Import", new Upload.Receiver() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public OutputStream receiveUpload(String filename, String mimeType) {
-				jsonUpload.reset();
-				return jsonUpload;
-			}
-		});
-		upload.addSucceededListener(new SucceededListener() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public void uploadSucceeded(SucceededEvent event) {
-				refreshData(JsonUtil.load(new String(jsonUpload.toByteArray()), Poll.class));
-
-			}
-		});
-		content.addComponent(upload);
-		window.setContent(content);
-		getUI().addWindow(window);
-	}
-
-	private void menuExport() {
-		final Window window = new Window("Export");
-		window.setWidth(300.0f, Unit.PIXELS);
-		window.center();
-		window.setModal(true);
-		window.setResizable(false);
-		final VerticalLayout content = new VerticalLayout();
-		window.setContent(content);
-
-		final Button downloadButton = new Button("Download");
-		content.addComponent(downloadButton);
-
-		final FileDownloader fileDownloader = new FileDownloader(prepareResource(poll));
-		fileDownloader.extend(downloadButton);
-
-		getUI().addWindow(window);
-	}
-
-	private StreamResource prepareResource(Poll poll) {
-		return new StreamResource(new StreamSource() {
-			private static final long serialVersionUID = 1L;
-
-			@Override
-			public InputStream getStream() {
-				return new ByteArrayInputStream(poll.toString().getBytes());
-			}
-
-		}, "poll.json");
+		main.addItem("Export", e -> fileManager.menuExport(getUI(), poll));
+		main.addItem("Import", e -> fileManager.menuImport(getUI(), this));
 	}
 
 	private void createContent(VerticalLayout v) {
@@ -299,5 +204,10 @@ public class VoterUI extends UI {
 			final Optional<Vote> vote = poll.getVoteByVoterAndItem(v, i);
 			return vote.isPresent() ? ("" + vote.get().getItemAndScore().getScore()) : "-";
 		}
+	}
+
+	@Override
+	public void accept(String json) {
+		refreshData(JsonUtil.load(json, Poll.class));
 	}
 }
