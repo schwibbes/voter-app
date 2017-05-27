@@ -2,11 +2,11 @@ package com.github.schwibbes.voter;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.github.schwibbes.voter.FileManager.UploadHandler;
 import com.github.schwibbes.voter.data.Item;
@@ -36,20 +36,24 @@ import com.vaadin.ui.VerticalLayout;
 
 @SpringUI
 @Theme("mytheme")
-public class VoterUI extends UI implements UploadHandler {
+public class VoterUI extends UI implements UploadHandler, InitializingBean {
 	private static final long serialVersionUID = 1;
 
 	private static final Logger log = LoggerFactory.getLogger(VoterUI.class);
 
 	private Poll poll;
+	private List<Poll> polls;
 	private final List<PopupView> popups = Lists.newArrayList();
 	private ListSelect<ItemAndScore> rank;
 	private FileManager fileManager;
 
+	@Autowired
+	private Config config;
+
 	@Override
 	protected void init(VaadinRequest vaadinRequest) {
 
-		poll = loadConfiguration();
+		polls = loadConfiguration();
 		createLayout();
 		refreshData(poll);
 		fileManager = new FileManager();
@@ -66,12 +70,8 @@ public class VoterUI extends UI implements UploadHandler {
 		createFooter(v);
 	}
 
-	private Poll loadConfiguration() {
-		// TODO load from config
-		final AtomicReference<Poll> result = new AtomicReference<>(new Poll("my-vote"));
-		IntStream.range(1, 6).forEach(i -> result.set(result.get().addItem(new Item("team-" + i))));
-		IntStream.range(1, 4).forEach(i -> result.set(result.get().addVoter(new Voter("voter-" + i))));
-		return result.get();
+	private List<Poll> loadConfiguration() {
+		return config.getPolls();
 	}
 
 	private void createHeader(VerticalLayout body) {
@@ -160,13 +160,9 @@ public class VoterUI extends UI implements UploadHandler {
 		footer.setSizeFull();
 	}
 
-	public void refreshData(Poll p) {
+	public void refreshData(Poll poll2) {
 		try {
-			poll = p;
-			// final PollViewModel vm = new PollViewModel();
-			// vm.setRank(Sets.newLinkedHashSet(p.getInOrder()));
-			// vm.setName(p.getName() + "-" + p.get1st());
-			// binder.readBean(vm);
+			poll = poll2;
 			rank.clear();
 			rank.setItems(poll.getInOrder());
 			popups.forEach(PopupView::markAsDirty);
@@ -209,5 +205,18 @@ public class VoterUI extends UI implements UploadHandler {
 	@Override
 	public void accept(String json) {
 		refreshData(JsonUtil.load(json, Poll.class));
+	}
+
+	public Config getConfig() {
+		return config;
+	}
+
+	public void setConfig(Config config) {
+		this.config = config;
+	}
+
+	@Override
+	public void afterPropertiesSet() throws Exception {
+		System.out.println(config.getPolls());
 	}
 }

@@ -1,0 +1,23 @@
+
+polls:
+ - name: "team-vote"
+   voters:
+    - teamA 
+    - teamB 
+    - teamC 
+   items:
+    - itemA
+    - itemB
+    - itemC
+    - itemD
+   scores: [1, 2, 3]
+ - name: 'jury-vote'
+   voters:
+    - juryA 
+    - juryB 
+   items:
+    - itemA
+    - itemB
+    - itemC
+    - itemD
+   scores: [1, 2, 3]

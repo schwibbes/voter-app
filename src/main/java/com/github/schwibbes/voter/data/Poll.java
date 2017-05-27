@@ -25,6 +25,11 @@ public class Poll extends BaseEntity {
 	// beans
 	private final CalculationUtil calcUtil = new CalculationUtil();
 
+	public Poll() {
+		// TODO Auto-generated constructor stub
+		this("");
+	}
+
 	/**
 	 * Default Values
 	 */
