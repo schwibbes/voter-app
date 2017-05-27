@@ -13,6 +13,7 @@ import com.github.schwibbes.voter.data.Item;
 import com.github.schwibbes.voter.data.ItemAndScore;
 import com.github.schwibbes.voter.data.Poll;
 import com.github.schwibbes.voter.data.Voter;
+import com.github.schwibbes.voter.util.CalculationUtil;
 import com.google.common.collect.Lists;
 import com.vaadin.annotations.Theme;
 import com.vaadin.icons.VaadinIcons;
@@ -58,14 +59,34 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 		final List<PollViewModel> result = polls.stream()
 				.map(my -> createContent(layout, my, polls))
 				.collect(toList());
+		createResult(layout, polls);
 		createFooter(layout);
 		return result;
+	}
+
+	private void createResult(VerticalLayout layout, List<Poll> polls) {
+		final HorizontalLayout content = new HorizontalLayout();
+		layout.addComponent(content);
+		layout.setExpandRatio(content, 6);
+		content.setSizeFull();
+
+		final ListSelect<ItemAndScore> rank = createRankField(content);
+		rank.setItems(new CalculationUtil().mergePolls(
+				polls,
+				polls.stream().map(x -> 1).collect(toList())));
+
 	}
 
 	private List<Poll> loadConfiguration() {
 		return config.getPolls()
 				.stream()
-				// .map(p -> new PollViewModel(p))
+				.map(p -> {
+					Poll result = p;
+					for (final Item i : config.getItems()) {
+						result = result.addItem(i);
+					}
+					return result;
+				})
 				.collect(toList());
 	}
 
@@ -100,7 +121,7 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 		content.setSizeFull();
 
 		final PollViewModel result = new PollViewModel(my);
-		result.setRank(createRankField(content, my));
+		result.setRank(createRankField(content));
 		result.setPopups(createVoteField(content, result.getPoll(), all));
 		return result;
 	}
@@ -141,7 +162,7 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 		return grid;
 	}
 
-	private ListSelect<ItemAndScore> createRankField(final HorizontalLayout content, Poll p) {
+	private ListSelect<ItemAndScore> createRankField(final HorizontalLayout content) {
 		final VerticalLayout rankField = new VerticalLayout();
 		content.addComponent(rankField);
 		content.setExpandRatio(rankField, 0.2f);
