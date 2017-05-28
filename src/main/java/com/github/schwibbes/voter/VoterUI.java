@@ -2,6 +2,7 @@ package com.github.schwibbes.voter;
 
 import static java.util.stream.Collectors.toList;
 
+import java.util.Collection;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -18,13 +19,14 @@ import com.github.schwibbes.voter.util.ConflictResolvingItemComparator;
 import com.google.common.collect.Lists;
 import com.vaadin.annotations.Theme;
 import com.vaadin.icons.VaadinIcons;
+import com.vaadin.server.ThemeResource;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Alignment;
-import com.vaadin.ui.GridLayout;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
+import com.vaadin.ui.Layout;
 import com.vaadin.ui.ListSelect;
 import com.vaadin.ui.MenuBar;
 import com.vaadin.ui.MenuBar.MenuItem;
@@ -53,7 +55,7 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 	private List<PollViewModel> renderWidgets(List<Poll> polls) {
 		final VerticalLayout layout = new VerticalLayout();
 		layout.setWidth("100%");
-		layout.setHeight("100%");
+		layout.setSpacing(true);
 		setContent(layout);
 
 		createHeader(layout, polls);
@@ -74,7 +76,7 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 		final ListSelect<ItemAndScore> rank = createRankField(content);
 		final ConflictResolvingItemComparator comparator = new ConflictResolvingItemComparator(
 				polls.stream().map(x -> x.getInOrder()).collect(toList()));
-		List<ItemAndScore> data = mergedResults(polls).stream().sorted(comparator).collect(toList());
+		final List<ItemAndScore> data = mergedResults(polls).stream().sorted(comparator).collect(toList());
 		rank.setItems(data);
 
 	}
@@ -98,24 +100,25 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 				.collect(toList());
 	}
 
-	private void createHeader(VerticalLayout body, List<Poll> polls) {
+	private void createHeader(VerticalLayout parent, List<Poll> polls) {
 		final HorizontalLayout header = new HorizontalLayout();
-		body.addComponent(header);
-		body.setExpandRatio(header, 2);
+		parent.addComponent(header);
+		parent.setExpandRatio(header, 2);
 		header.setSizeFull();
 		header.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
 
-		header.addComponent(new Image("Logo"));
-		// TODO: load logo
-		final Label pageTitle = new Label("Voter<app>");
-		header.addComponent(pageTitle);
-		header.setComponentAlignment(pageTitle, Alignment.MIDDLE_LEFT);
+		final Image logo = new Image();
+		logo.setSource(new ThemeResource("logo.png"));
+		header.addComponent(logo);
+		header.setComponentAlignment(logo, Alignment.MIDDLE_LEFT);
+
 		createMenu(header, polls);
 	}
 
 	private void createMenu(final HorizontalLayout header, List<Poll> polls) {
 		final MenuBar menu = new MenuBar();
 		header.addComponent(menu);
+		header.setComponentAlignment(menu, Alignment.MIDDLE_RIGHT);
 		final MenuItem main = menu.addItem("", VaadinIcons.MENU, null);
 		main.addItem("Restart", e -> refreshData(renderWidgets(loadConfiguration())));
 		main.addItem("Export", e -> fileManager.menuExport(getUI(), polls));
@@ -124,56 +127,69 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 
 	private PollViewModel createContent(VerticalLayout v, Poll my, List<Poll> all) {
 		final HorizontalLayout content = new HorizontalLayout();
+		content.setCaption(my.getName());
 		v.addComponent(content);
 		v.setExpandRatio(content, 6);
 		content.setSizeFull();
 
 		final PollViewModel result = new PollViewModel(my);
-		result.setRank(createRankField(content));
 		result.setPopups(createVoteField(content, result.getPoll(), all));
+		result.setRank(createRankField(content));
 		return result;
 	}
 
-	private List<PopupView> createVoteField(final HorizontalLayout content, Poll my, List<Poll> all) {
-		final VerticalLayout voteField = new VerticalLayout();
-		content.addComponent(voteField);
-		content.setExpandRatio(voteField, 1.0f);
+	private List<PopupView> createVoteField(final HorizontalLayout parent, Poll my, List<Poll> all) {
+		final Layout base = new VerticalLayout();
+		parent.addComponent(base);
+		parent.setComponentAlignment(base, Alignment.MIDDLE_CENTER);
 
-		final GridLayout grid = grid(voteField, my);
-
-		for (final Item item : my.getItems()) {
-			grid.addComponent(new Label(item.getName()));
-		}
-
+		createFirstRow(my, base);
 		final List<PopupView> popups = Lists.newArrayList();
 		for (final Voter voter : my.getVoters()) {
-
-			grid.addComponent(new Label(voter.getName()));
-
-			for (final Item item : my.getItems()) {
-				final PopupView popup = new PopupView(new VoteComponent(my, all, voter, item, this));
-				grid.addComponent(popup);
-				popups.add(popup);
-			}
+			popups.addAll(createRowForVoter(my, all, base, voter));
 		}
 
 		return popups;
 	}
 
-	private GridLayout grid(final VerticalLayout voteField, Poll p) {
-		final GridLayout grid = new GridLayout(1 + p.getItems().size(), 1 + p.getVoters().size());
-		voteField.addComponent(grid);
-		voteField.setComponentAlignment(grid, Alignment.MIDDLE_CENTER);
+	private void createFirstRow(Poll my, final Layout base) {
+		final HorizontalLayout row = new HorizontalLayout();
+		row.addComponent(fixedSizeLabel("")); // empty corner
 
-		grid.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
-		grid.addComponent(new Label()); // empty corner
-		return grid;
+		for (final Item item : my.getItems()) {
+			final Label label = fixedSizeLabel(item.getName());
+			row.addComponent(label);
+		}
+		base.addComponent(row);
+	}
+
+	private Label fixedSizeLabel(final String caption) {
+		final Label label = new Label(caption);
+		label.setWidth("100px");
+		return label;
+	}
+
+	private Collection<PopupView> createRowForVoter(Poll my,
+			List<Poll> all,
+			final Layout base,
+			final Voter voter) {
+		final HorizontalLayout row = new HorizontalLayout();
+		base.addComponent(row);
+
+		row.addComponent(fixedSizeLabel(voter.getName()));
+
+		final List<PopupView> popups = Lists.newArrayList();
+		for (final Item item : my.getItems()) {
+			final PopupView popup = new PopupView(new VoteComponent(my, all, voter, item, this));
+			row.addComponent(popup);
+			popups.add(popup);
+		}
+		return popups;
 	}
 
 	private ListSelect<ItemAndScore> createRankField(final HorizontalLayout content) {
 		final VerticalLayout rankField = new VerticalLayout();
 		content.addComponent(rankField);
-		content.setExpandRatio(rankField, 0.2f);
 		final ListSelect<ItemAndScore> rank = new ListSelect<>();
 		rank.setItemCaptionGenerator(x -> String.format("%s (%d)", x.getItem().getName(), x.getScore()));
 		rank.setWidth("100%");

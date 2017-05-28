@@ -12,13 +12,14 @@ import com.github.schwibbes.voter.data.Voter;
 import com.google.common.base.Objects;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.Component;
-import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Layout;
 import com.vaadin.ui.PopupView;
+import com.vaadin.ui.VerticalLayout;
 
 public class VoteComponent implements PopupView.Content {
 
 	private static final long serialVersionUID = 1L;
-	private final HorizontalLayout layout;
+	private final Layout layout;
 	private final Voter v;
 	private final Item i;
 	private final Poll p;
@@ -27,7 +28,7 @@ public class VoteComponent implements PopupView.Content {
 		this.p = my;
 		this.v = v;
 		this.i = i;
-		layout = new HorizontalLayout();
+		layout = new VerticalLayout();
 
 		my.getScores().forEach(score -> {
 			layout.addComponent(new Button(score + "Punkte", e -> {
@@ -55,7 +56,16 @@ public class VoteComponent implements PopupView.Content {
 	@Override
 	public final String getMinimizedValueAsHTML() {
 		final Optional<Vote> vote = p.getVoteByVoterAndItem(v, i);
-		return vote.isPresent() ? ("" + vote.get().getItemAndScore().getScore()) : "-";
+		return vote.isPresent() ? nonemptyVote(vote) : emptyVote();
+	}
+
+	private String emptyVote() {
+		return "<button style='width:100px'>&nbsp;</button>";
+	}
+
+	private String nonemptyVote(final Optional<Vote> vote) {
+		return String.format("<button style='width:100px;text-align: center;'>%d</button>",
+				vote.get().getItemAndScore().getScore());
 	}
 
 }
