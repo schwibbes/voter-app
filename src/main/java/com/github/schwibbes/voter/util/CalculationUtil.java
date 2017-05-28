@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -79,7 +78,7 @@ public class CalculationUtil {
 				});
 		log.trace("merge polls: {} to result {}", polls, result);
 
-		return result;
+		return result.stream().sorted().collect(toList());
 	}
 
 	@VisibleForTesting
@@ -192,36 +191,6 @@ public class CalculationUtil {
 		}
 
 		return result;
-	}
-
-	public static final class ConflictResolvingItemComparator implements Comparator<ItemAndScore> {
-
-		private final List<List<ItemAndScore>> rankLists;
-		private final CalculationUtil calculationUtil;
-
-		public ConflictResolvingItemComparator(List<List<ItemAndScore>> rankLists) {
-			this.rankLists = rankLists;
-			calculationUtil = new CalculationUtil();
-		}
-
-		@Override
-		public int compare(ItemAndScore o1, ItemAndScore o2) {
-
-			final int scoreDiff = o1.getScore() - o2.getScore();
-
-			if (scoreDiff != 0) {
-				return scoreDiff;
-			}
-
-			final Item winner = calculationUtil.resolveTie(o1.getItem(), o2.getItem(), rankLists);
-			if (Objects.equal(winner, o1.getItem())) {
-				return -1;
-			} else if (Objects.equal(winner, o2.getItem())) {
-				return +1;
-			} else {
-				return 0;
-			}
-		}
 	}
 
 }

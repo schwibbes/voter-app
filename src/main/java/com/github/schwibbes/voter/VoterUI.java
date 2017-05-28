@@ -14,6 +14,7 @@ import com.github.schwibbes.voter.data.ItemAndScore;
 import com.github.schwibbes.voter.data.Poll;
 import com.github.schwibbes.voter.data.Voter;
 import com.github.schwibbes.voter.util.CalculationUtil;
+import com.github.schwibbes.voter.util.ConflictResolvingItemComparator;
 import com.google.common.collect.Lists;
 import com.vaadin.annotations.Theme;
 import com.vaadin.icons.VaadinIcons;
@@ -71,10 +72,17 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 		content.setSizeFull();
 
 		final ListSelect<ItemAndScore> rank = createRankField(content);
-		rank.setItems(new CalculationUtil().mergePolls(
-				polls,
-				polls.stream().map(x -> 1).collect(toList())));
+		final ConflictResolvingItemComparator comparator = new ConflictResolvingItemComparator(
+				polls.stream().map(x -> x.getInOrder()).collect(toList()));
+		List<ItemAndScore> data = mergedResults(polls).stream().sorted(comparator).collect(toList());
+		rank.setItems(data);
 
+	}
+
+	private List<ItemAndScore> mergedResults(List<Poll> polls) {
+		return new CalculationUtil().mergePolls(
+				polls,
+				polls.stream().map(x -> 1).collect(toList()));
 	}
 
 	private List<Poll> loadConfiguration() {

@@ -105,9 +105,9 @@ public class CalculationUtilTest {
 
 	@Test
 	public void voter_factor() {
-		final Poll p1 = new Poll("").addVoter(voterA);
-		final Poll p2 = p1.addVoter(voterB);
-		final Poll p3 = p2.addVoter(voterC);
+		final Poll p1 = new Poll("A").addVoter(voterA);
+		final Poll p2 = new Poll("B").addVoter(voterA).addVoter(voterB);
+		final Poll p3 = new Poll("B").addVoter(voterA).addVoter(voterB).addVoter(voterC);
 
 		final Map<Poll, Integer> factors = underTest.findFactorByNumberOfVoters(Arrays.asList(p1, p2, p3));
 
@@ -118,18 +118,19 @@ public class CalculationUtilTest {
 	@Test
 	public void result_should_not_be_sensitive_to_number_of_voters_per_poll_() {
 
-		final Poll base = new Poll("")
+		final Poll p1 = new Poll("A")
 				.addItem(itemA)
-				.addItem(itemB);
-
-		final Poll p1 = base
+				.addItem(itemB)
 				.addVoter(voterA)
 				.addVoter(voterB)
 				.addVote(voterA, itemA, 3)
 				.addVote(voterA, itemB, 2)
 				.addVote(voterB, itemA, 3)
 				.addVote(voterB, itemB, 2);
-		final Poll p2 = base
+
+		final Poll p2 = new Poll("B")
+				.addItem(itemA)
+				.addItem(itemB)
 				.addVoter(voterA)
 				.addVote(voterA, itemA, 2)
 				.addVote(voterA, itemB, 3);
@@ -150,11 +151,9 @@ public class CalculationUtilTest {
 	@Test
 	public void complex_poll_merge_1() {
 
-		final Poll base = new Poll("")
+		final Poll p1 = new Poll("A")
 				.addItem(itemA)
-				.addItem(itemB);
-
-		final Poll p1 = base
+				.addItem(itemB)
 				.addVoter(voterA)
 				.addVoter(voterB)
 				.addVoter(voterC)
@@ -165,12 +164,16 @@ public class CalculationUtilTest {
 				.addVote(voterC, itemA, 3)
 				.addVote(voterC, itemB, 2);
 
-		final Poll p2 = base
+		final Poll p2 = new Poll("B")
+				.addItem(itemA)
+				.addItem(itemB)
 				.addVoter(voterA)
 				.addVote(voterA, itemA, 2)
 				.addVote(voterA, itemB, 3);
 
-		final Poll p3 = base
+		final Poll p3 = new Poll("C")
+				.addItem(itemA)
+				.addItem(itemB)
 				.addVoter(voterB)
 				.addVote(voterB, itemA, 2)
 				.addVote(voterB, itemB, 3);
@@ -195,15 +198,17 @@ public class CalculationUtilTest {
 	@Test
 	public void solve_tie_game_strategy() {
 
-		final Poll base = new Poll("")
+		final Poll p1 = new Poll("A")
 				.addVoter(voterA)
 				.addItem(itemA)
-				.addItem(itemB);
-
-		final Poll p1 = base
+				.addItem(itemB)
 				.addVote(voterA, itemA, 3)
 				.addVote(voterA, itemB, 1);
-		final Poll p2 = base
+
+		final Poll p2 = new Poll("B")
+				.addVoter(voterA)
+				.addItem(itemA)
+				.addItem(itemB)
 				.addVote(voterA, itemA, 1)
 				.addVote(voterA, itemB, 3);
 
@@ -228,15 +233,17 @@ public class CalculationUtilTest {
 	@Test
 	public void solve_tie_game_strategy_2() {
 
-		final Poll base = new Poll("")
+		final Poll p1 = new Poll("A")
 				.addVoter(voterA)
 				.addItem(itemA)
-				.addItem(itemB);
-
-		final Poll p1 = base
+				.addItem(itemB)
 				.addVote(voterA, itemA, 3)
 				.addVote(voterA, itemB, 1);
-		final Poll p2 = base
+
+		final Poll p2 = new Poll("B")
+				.addVoter(voterA)
+				.addItem(itemA)
+				.addItem(itemB)
 				.addVote(voterA, itemA, 1)
 				.addVote(voterA, itemB, 3);
 
@@ -251,12 +258,12 @@ public class CalculationUtilTest {
 		assertEquals(itemA, result.get(1).getItem());
 
 		Collections.sort(result,
-				new CalculationUtil.ConflictResolvingItemComparator(Arrays.asList(p1.getInOrder(), p2.getInOrder())));
+				new ConflictResolvingItemComparator(Arrays.asList(p1.getInOrder(), p2.getInOrder())));
 		assertThat(result.get(0).getItem(), is(itemB));
 		assertThat(result.get(1).getItem(), is(itemA));
 
 		Collections.sort(result,
-				new CalculationUtil.ConflictResolvingItemComparator(Arrays.asList(p2.getInOrder(), p1.getInOrder())));
+				new ConflictResolvingItemComparator(Arrays.asList(p2.getInOrder(), p1.getInOrder())));
 		assertThat(result.get(0).getItem(), is(itemA));
 		assertThat(result.get(1).getItem(), is(itemB));
 
