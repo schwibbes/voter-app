@@ -3,8 +3,16 @@
 
 .mytheme {
    @include valo;
+	
+	.logo-margin {
+	 	margin-left: 5px;
+	}
+	
+	.bg-image {
+		background: url(bg.jpg) no-repeat center center fixed; 
+  		-webkit-background-size: cover;
+  		-moz-background-size: cover;
+  		-o-background-size: cover;
+  		background-size: cover;
+	}
 }
-
-.logo-margin {
- 	margin-left: 15px;
- }

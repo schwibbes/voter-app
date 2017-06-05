@@ -23,6 +23,7 @@ import com.vaadin.server.ThemeResource;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.AbstractComponentContainer;
+import com.vaadin.ui.Alignment;
 import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.HorizontalSplitPanel;
@@ -56,10 +57,15 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 	}
 
 	private List<PollViewModel> renderWidgets(List<Poll> polls) {
+		final VerticalLayout outline = new VerticalLayout();
+		outline.addStyleName("bg-image");
+
 		final VerticalLayout layout = new VerticalLayout();
 		layout.setWidth("100%");
+		outline.addComponent(layout);
+		outline.setComponentAlignment(layout, Alignment.TOP_CENTER);
 		layout.setSpacing(true);
-		setContent(layout);
+		setContent(outline);
 
 		createHeader(layout, polls);
 		final List<PollViewModel> result = polls.stream()
