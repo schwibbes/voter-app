@@ -1,10 +1,14 @@
 package com.github.schwibbes.voter.data;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ItemAndScore implements Comparable<ItemAndScore> {
 	private final Item item;
 	private final int score;
 
-	public ItemAndScore(Item item, int score) {
+	@JsonCreator
+	public ItemAndScore(@JsonProperty("item") Item item, @JsonProperty("score") int score) {
 		this.item = item;
 		this.score = score;
 	}

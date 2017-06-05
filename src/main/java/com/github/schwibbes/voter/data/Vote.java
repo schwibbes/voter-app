@@ -1,5 +1,7 @@
 package com.github.schwibbes.voter.data;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 
 public class Vote {
@@ -10,7 +12,8 @@ public class Vote {
 		this(voter, new ItemAndScore(item, score));
 	}
 
-	public Vote(Voter voter, ItemAndScore itemAndScore) {
+	@JsonCreator
+	public Vote(@JsonProperty("voter") Voter voter, @JsonProperty("itemAndScore") ItemAndScore itemAndScore) {
 		super();
 		this.voter = voter;
 		this.itemAndScore = itemAndScore;

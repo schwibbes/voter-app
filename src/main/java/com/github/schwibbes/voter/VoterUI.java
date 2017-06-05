@@ -23,6 +23,7 @@ import com.vaadin.server.ThemeResource;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.Alignment;
+import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
@@ -101,28 +102,27 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 	}
 
 	private void createHeader(VerticalLayout parent, List<Poll> polls) {
-		final HorizontalLayout header = new HorizontalLayout();
+		final CssLayout header = new CssLayout();
 		parent.addComponent(header);
 		parent.setExpandRatio(header, 2);
 		header.setSizeFull();
-		header.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
+
+		createMenu(header, polls);
 
 		final Image logo = new Image();
 		logo.setSource(new ThemeResource("logo.png"));
+		logo.setHeight("80px");
 		header.addComponent(logo);
-		header.setComponentAlignment(logo, Alignment.MIDDLE_LEFT);
-
-		createMenu(header, polls);
 	}
 
-	private void createMenu(final HorizontalLayout header, List<Poll> polls) {
+	private void createMenu(final Layout header, List<Poll> polls) {
 		final MenuBar menu = new MenuBar();
+		menu.setHeight("80px");
 		header.addComponent(menu);
-		header.setComponentAlignment(menu, Alignment.MIDDLE_RIGHT);
-		final MenuItem main = menu.addItem("", VaadinIcons.MENU, null);
-		main.addItem("Restart", e -> refreshData(renderWidgets(loadConfiguration())));
-		main.addItem("Export", e -> fileManager.menuExport(getUI(), polls));
-		main.addItem("Import", e -> fileManager.menuImport(getUI(), this));
+		final MenuItem main = menu.addItem("", null);
+		main.addItem("Restart", VaadinIcons.REFRESH, e -> refreshData(renderWidgets(loadConfiguration())));
+		main.addItem("Export", VaadinIcons.CLOUD_DOWNLOAD_O, e -> fileManager.menuExport(getUI(), polls));
+		main.addItem("Import", VaadinIcons.CLOUD_UPLOAD_O, e -> fileManager.menuImport(getUI(), this));
 	}
 
 	private PollViewModel createContent(VerticalLayout v, Poll my, List<Poll> all) {
