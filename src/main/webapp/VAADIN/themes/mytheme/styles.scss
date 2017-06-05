@@ -1,5 +1,10 @@
-@import "mytheme";
+@import "variables";
+@import "../valo/valo";
 
-.small-button {
-	font-size: 10px;
+.mytheme {
+   @include valo;
 }
+
+.logo-margin {
+ 	margin-left: 15px;
+ }

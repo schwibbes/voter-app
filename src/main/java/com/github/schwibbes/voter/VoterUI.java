@@ -22,9 +22,10 @@ import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.ThemeResource;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.SpringUI;
-import com.vaadin.ui.Alignment;
+import com.vaadin.ui.AbstractComponentContainer;
 import com.vaadin.ui.CssLayout;
 import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.Image;
 import com.vaadin.ui.Label;
 import com.vaadin.ui.Layout;
@@ -112,6 +113,7 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 		final Image logo = new Image();
 		logo.setSource(new ThemeResource("logo.png"));
 		logo.setHeight("80px");
+		logo.setStyleName("logo-margin");
 		header.addComponent(logo);
 	}
 
@@ -126,11 +128,13 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 	}
 
 	private PollViewModel createContent(VerticalLayout v, Poll my, List<Poll> all) {
-		final HorizontalLayout content = new HorizontalLayout();
+
+		final HorizontalSplitPanel content = new HorizontalSplitPanel();
 		content.setCaption(my.getName());
 		v.addComponent(content);
 		v.setExpandRatio(content, 6);
 		content.setSizeFull();
+		content.setSplitPosition(80, Unit.PERCENTAGE);
 
 		final PollViewModel result = new PollViewModel(my);
 		result.setPopups(createVoteField(content, result.getPoll(), all));
@@ -138,10 +142,9 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 		return result;
 	}
 
-	private List<PopupView> createVoteField(final HorizontalLayout parent, Poll my, List<Poll> all) {
+	private List<PopupView> createVoteField(final HorizontalSplitPanel content, Poll my, List<Poll> all) {
 		final Layout base = new VerticalLayout();
-		parent.addComponent(base);
-		parent.setComponentAlignment(base, Alignment.MIDDLE_CENTER);
+		content.addComponent(base);
 
 		createFirstRow(my, base);
 		final List<PopupView> popups = Lists.newArrayList();
@@ -187,7 +190,7 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 		return popups;
 	}
 
-	private ListSelect<ItemAndScore> createRankField(final HorizontalLayout content) {
+	private ListSelect<ItemAndScore> createRankField(final AbstractComponentContainer content) {
 		final VerticalLayout rankField = new VerticalLayout();
 		content.addComponent(rankField);
 		final ListSelect<ItemAndScore> rank = new ListSelect<>();
