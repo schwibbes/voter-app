@@ -32,6 +32,7 @@ import com.vaadin.ui.Layout;
 import com.vaadin.ui.ListSelect;
 import com.vaadin.ui.MenuBar;
 import com.vaadin.ui.MenuBar.MenuItem;
+import com.vaadin.ui.Panel;
 import com.vaadin.ui.PopupView;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
@@ -70,9 +71,12 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 	}
 
 	private void createResult(VerticalLayout layout, List<Poll> polls) {
+		final Panel outline = new Panel("Result");
+		layout.addComponent(outline);
+		layout.setExpandRatio(outline, 6);
+
 		final HorizontalLayout content = new HorizontalLayout();
-		layout.addComponent(content);
-		layout.setExpandRatio(content, 6);
+		outline.setContent(content);
 		content.setSizeFull();
 
 		final ListSelect<ItemAndScore> rank = createRankField(content);
@@ -128,11 +132,12 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 	}
 
 	private PollViewModel createContent(VerticalLayout v, Poll my, List<Poll> all) {
+		final Panel outline = new Panel(my.getName());
+		v.addComponent(outline);
+		v.setExpandRatio(outline, 6);
 
 		final HorizontalSplitPanel content = new HorizontalSplitPanel();
-		content.setCaption(my.getName());
-		v.addComponent(content);
-		v.setExpandRatio(content, 6);
+		outline.setContent(content);
 		content.setSizeFull();
 		content.setSplitPosition(80, Unit.PERCENTAGE);
 
