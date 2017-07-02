@@ -1,10 +1,10 @@
 package com.github.schwibbes.voter.data;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+
+import com.google.common.base.Preconditions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.schwibbes.voter.util.CalculationUtil;
@@ -26,13 +26,9 @@ public class Poll extends BaseEntity {
 	private final CalculationUtil calcUtil = new CalculationUtil();
 
 	public Poll() {
-		// TODO Auto-generated constructor stub
 		this("");
 	}
 
-	/**
-	 * Default Values
-	 */
 	public Poll(String name) {
 		this(UUID.randomUUID(),
 				name,
@@ -42,7 +38,6 @@ public class Poll extends BaseEntity {
 				Lists.newArrayList());
 	}
 
-	// TODO: JsonImport does not work
 	public Poll(
 			UUID id,
 			String name,
@@ -50,6 +45,9 @@ public class Poll extends BaseEntity {
 			List<Voter> voters,
 			List<Integer> scores,
 			List<Vote> votes) {
+		Preconditions.checkArgument(voters.stream().map(Voter::getName).collect(toSet()).size() == voters.size());
+		Preconditions.checkArgument(items.stream().map(Item::getName).collect(toSet()).size() == items.size());
+
 		this.id = id;
 		this.name = name;
 		this.items = Lists.newArrayList(items);
@@ -134,6 +132,27 @@ public class Poll extends BaseEntity {
 				.filter(v -> Objects.equal(voter, v.getVoter()))
 				.filter(v -> Objects.equal(item, v.getItemAndScore().getItem()))
 				.findFirst();
+	}
+
+	@JsonIgnore
+	public int getDistinctFactor() {
+		// # A B C D
+		// A - + + +
+		// B + - + +
+		// C + + - +
+		// D + + + -
+		Set<String> itemNames = items.stream().map(Item::getName).collect(toSet());
+		Set<String> voterAndItem = voters.stream().map(Voter::getName)
+			.filter(x -> itemNames.contains(x))
+			.collect(toSet());
+
+		if (voterAndItem.size() == voters.size()) {
+			return voters.size() - 1;
+		} else if (voterAndItem.size() == 0) {
+			return voters.size();
+		} else {
+			throw new RuntimeException("invalid poll: " + voterAndItem);
+		}
 	}
 
 	public List<Vote> getVotes() {

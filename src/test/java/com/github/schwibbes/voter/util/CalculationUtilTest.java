@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.junit.Test;
+import org.junit.*;
 
 import com.github.schwibbes.voter.data.Item;
 import com.github.schwibbes.voter.data.ItemAndScore;
@@ -116,6 +116,52 @@ public class CalculationUtilTest {
 	}
 
 	@Test
+	public void voter_factor_2() {
+		final Poll twoVoters = new Poll("two")
+			.addVoter(new Voter("A")).addVoter(new Voter("B"))
+			.addItem(new Item("C")).addItem(new Item("D"));
+
+		final Poll oneVoter = new Poll("one")
+			.addVoter(new Voter("voter"))
+			.addItem(new Item("A")).addItem(new Item("B"));
+
+		final Poll threeVoters = new Poll("three")
+			.addVoter(new Voter("voter1")).addVoter(new Voter("voter2")).addVoter(new Voter("voter3"))
+			.addItem(new Item("A")).addItem(new Item("B"));
+
+
+		final Map<Poll, Integer> factors = underTest.findFactorByNumberOfVoters(
+			Arrays.asList(oneVoter, twoVoters, threeVoters));
+
+		assertThat(factors.get(twoVoters), is(3));
+		assertThat(factors.get(threeVoters), is(2));
+		assertThat(factors.get(oneVoter), is(6));
+	}
+
+	@Test
+	public void voter_factor_3() {
+		final Poll twoWithRepeats = new Poll("two-with-repeats")
+			.addVoter(new Voter("A")).addVoter(new Voter("B"))
+			.addItem(new Item("A")).addItem(new Item("B"));
+
+		final Poll oneVoter = new Poll("one")
+			.addVoter(new Voter("voter"))
+			.addItem(new Item("A")).addItem(new Item("B"));
+
+		final Poll threeVoters = new Poll("three")
+			.addVoter(new Voter("voter1")).addVoter(new Voter("voter2")).addVoter(new Voter("voter3"))
+			.addItem(new Item("A")).addItem(new Item("B"));
+
+
+		final Map<Poll, Integer> factors = underTest.findFactorByNumberOfVoters(
+			Arrays.asList(oneVoter, twoWithRepeats, threeVoters));
+
+		assertThat(factors.get(twoWithRepeats), is(3));
+		assertThat(factors.get(threeVoters), is(1));
+		assertThat(factors.get(oneVoter), is(3));
+	}
+	@Ignore
+	@Test
 	public void result_should_not_be_sensitive_to_number_of_voters_per_poll_() {
 
 		final Poll p1 = new Poll("A")
@@ -148,6 +194,7 @@ public class CalculationUtilTest {
 		System.out.println(result);
 	}
 
+	@Ignore
 	@Test
 	public void complex_poll_merge_1() {
 

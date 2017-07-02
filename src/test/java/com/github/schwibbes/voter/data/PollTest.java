@@ -130,4 +130,44 @@ public class PollTest {
 
 	}
 
+	@Test
+	public void distinct_count_for_team_equal_item() {
+		final Poll p1 = new Poll("A")
+			.addVoter(new Voter("A"))
+			.addItem(new Item("A"));
+
+		final Poll p2 = new Poll("A")
+			.addVoter(new Voter("A")).addVoter(new Voter("B"))
+			.addItem(new Item("A")).addItem(new Item("B"));
+
+		final Poll p3 = new Poll("A")
+			.addVoter(new Voter("A")).addVoter(new Voter("B")).addVoter(new Voter("C"))
+			.addItem(new Item("A")).addItem(new Item("B")).addItem(new Item("C"));
+
+		assertThat(p1.getDistinctFactor(), is(0));
+		assertThat(p2.getDistinctFactor(), is(1));
+		assertThat(p3.getDistinctFactor(), is(2));
+	}
+
+	@Test
+	public void distinct_count_for_team_not_equal_item() {
+		final Poll p1 = new Poll("A")
+			.addVoter(new Voter("A"))
+			.addItem(new Item("C"));
+
+		final Poll p2 = new Poll("A")
+			.addVoter(new Voter("A")).addVoter(new Voter("B"))
+			.addItem(new Item("C")).addItem(new Item("D"));
+
+		final Poll p3 = new Poll("A")
+			.addVoter(new Voter("A")).addVoter(new Voter("B")).addVoter(new Voter("C"))
+			.addItem(new Item("D")).addItem(new Item("E")).addItem(new Item("F"));
+
+
+		assertThat(p1.getDistinctFactor(), is(1));
+		assertThat(p2.getDistinctFactor(), is(2));
+		assertThat(p3.getDistinctFactor(), is(3));
+	}
+
+
 }

@@ -1,14 +1,13 @@
 items:
- - itemA
- - itemB
- - itemC
- - itemD
+ - TeamA
+ - TeamB
+ - TeamC
 polls:
  - name: "team-vote"
    voters:
-    - teamA 
-    - teamB 
-    - teamC 
+    - TeamA 
+    - TeamB 
+    - TeamC 
    scores: [1, 2, 3]
  - name: 'jury-vote'
    voters:

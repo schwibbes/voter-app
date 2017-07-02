@@ -17,6 +17,8 @@ import com.github.schwibbes.voter.data.Voter;
 import com.github.schwibbes.voter.util.CalculationUtil;
 import com.github.schwibbes.voter.util.ConflictResolvingItemComparator;
 import com.google.common.collect.Lists;
+import com.google.common.base.Objects;
+
 import com.vaadin.annotations.Theme;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.ThemeResource;
@@ -194,9 +196,13 @@ public class VoterUI extends UI implements UpdateHandler, InitializingBean {
 
 		final List<PopupView> popups = Lists.newArrayList();
 		for (final Item item : my.getItems()) {
-			final PopupView popup = new PopupView(new VoteComponent(my, all, voter, item, this));
-			row.addComponent(popup);
-			popups.add(popup);
+			if (Objects.equal(item.getName(), voter.getName())){
+				row.addComponent(fixedSizeLabel("-"));
+			} else {
+				final PopupView popup = new PopupView(new VoteComponent(my, all, voter, item, this));
+				row.addComponent(popup);
+				popups.add(popup);
+			}
 		}
 		return popups;
 	}

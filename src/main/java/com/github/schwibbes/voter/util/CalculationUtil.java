@@ -84,18 +84,16 @@ public class CalculationUtil {
 	@VisibleForTesting
 	Map<Poll, Integer> findFactorByNumberOfVoters(List<Poll> polls) {
 
-		final Poll min = polls.stream()
-				.min((a, b) -> a.getVoters().size() - b.getVoters().size())
-				.orElseThrow(() -> new IllegalArgumentException(""));
-		log.info("using poll {} as reference", min.getVoters().stream().map(Voter::getName).collect(toList()));
-
 		final Map<Poll, Integer> result = polls.stream()
-				.collect(toMap(x -> x, x -> {
+				.peek(p -> log.warn("factor for " + p.getName()))
+				.collect(toMap(x -> x, currentPoll -> {
 					final int multiplied = polls.stream()
-							.map(p -> p.getVoters().size())
+							.filter(p -> !p.getId().equals(currentPoll.getId()))
+							.peek(p -> log.warn("  {}: {}", p.getName(), p.getDistinctFactor()))
+							.map(p -> p.getDistinctFactor())
 							.reduce((a, b) -> a * b)
 							.orElseThrow(() -> new IllegalArgumentException(""));
-					return multiplied / x.getVoters().size();
+					return multiplied;
 				}));
 		log.info("poll factors {}", prettyPrintPollFactors(result));
 
